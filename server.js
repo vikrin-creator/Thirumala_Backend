@@ -67,7 +67,12 @@ app.get('/', (req, res) => {
       'POST /ledger': 'Add new ledger entry',
       'GET /ledger': 'Get all ledger entries',
       'PUT /ledger/:id': 'Update a ledger entry',
-      'DELETE /ledger/:id': 'Delete a ledger entry'
+      'DELETE /ledger/:id': 'Delete a ledger entry',
+      'POST /lorries': 'Add new lorry',
+      'GET /lorries': 'Get all lorries',
+      'GET /lorries/:id': 'Get a lorry by ID',
+      'PUT /lorries/:id': 'Update a lorry',
+      'DELETE /lorries/:id': 'Delete a lorry'
     }
   });
 });
@@ -495,6 +500,181 @@ app.delete('/ledger/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// ==================== LORRY ENDPOINTS ====================
+
+// Create a new lorry
+app.post('/lorries', async (req, res) => {
+  try {
+    const lorryData = {
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await db.collection('lorries').insertOne(lorryData);
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: result.insertedId,
+        ...lorryData
+      },
+      message: 'Lorry created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating lorry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create lorry',
+      message: error.message
+    });
+  }
+});
+
+// Get all lorries
+app.get('/lorries', async (req, res) => {
+  try {
+    const lorries = await db.collection('lorries')
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    res.json({
+      success: true,
+      data: lorries
+    });
+  } catch (error) {
+    console.error('Error fetching lorries:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch lorries',
+      message: error.message
+    });
+  }
+});
+
+// Get a single lorry by ID
+app.get('/lorries/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid lorry ID'
+      });
+    }
+    
+    const lorry = await db.collection('lorries').findOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (!lorry) {
+      return res.status(404).json({
+        success: false,
+        error: 'Lorry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: lorry
+    });
+  } catch (error) {
+    console.error('Error fetching lorry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch lorry',
+      message: error.message
+    });
+  }
+});
+
+// Update a lorry
+app.put('/lorries/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid lorry ID'
+      });
+    }
+    
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date()
+    };
+    
+    // Remove _id from update data if present
+    delete updateData._id;
+    
+    const result = await db.collection('lorries').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result.value) {
+      return res.status(404).json({
+        success: false,
+        error: 'Lorry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: result.value,
+      message: 'Lorry updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating lorry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update lorry',
+      message: error.message
+    });
+  }
+});
+
+// Delete a lorry
+app.delete('/lorries/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid lorry ID'
+      });
+    }
+    
+    const result = await db.collection('lorries').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Lorry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Lorry deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting lorry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete lorry',
       message: error.message
     });
   }
