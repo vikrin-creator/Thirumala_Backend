@@ -53,13 +53,17 @@ app.get('/', (req, res) => {
     message: 'Thirumala Broker API is running',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }),
     database_status: db ? 'Connected' : 'Disconnected',
     endpoints: {
       'POST /sellers': 'Add new seller',
       'GET /sellers': 'Get all sellers',
+      'PUT /sellers/:id': 'Update a seller',
+      'DELETE /sellers/:id': 'Delete a seller',
       'POST /buyers': 'Add new buyer',
-      'GET /buyers': 'Get all buyers'
+      'GET /buyers': 'Get all buyers',
+      'PUT /buyers/:id': 'Update a buyer',
+      'DELETE /buyers/:id': 'Delete a buyer'
     }
   });
 });
@@ -177,6 +181,178 @@ app.get('/buyers', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch buyers',
+      message: error.message
+    });
+  }
+});
+
+// Update seller endpoint
+app.put('/sellers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid seller ID'
+      });
+    }
+    
+    // Prepare update data
+    const updateData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    
+    // Remove _id from update data if present
+    delete updateData._id;
+    
+    const result = await db.collection('sellers').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Seller not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Seller updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating seller:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update seller',
+      message: error.message
+    });
+  }
+});
+
+// Delete seller endpoint
+app.delete('/sellers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid seller ID'
+      });
+    }
+    
+    const result = await db.collection('sellers').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Seller not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Seller deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting seller:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete seller',
+      message: error.message
+    });
+  }
+});
+
+// Update buyer endpoint
+app.put('/buyers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid buyer ID'
+      });
+    }
+    
+    // Prepare update data
+    const updateData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    
+    // Remove _id from update data if present
+    delete updateData._id;
+    
+    const result = await db.collection('buyers').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Buyer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Buyer updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating buyer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update buyer',
+      message: error.message
+    });
+  }
+});
+
+// Delete buyer endpoint
+app.delete('/buyers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ObjectId
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid buyer ID'
+      });
+    }
+    
+    const result = await db.collection('buyers').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Buyer not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Buyer deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting buyer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete buyer',
       message: error.message
     });
   }
