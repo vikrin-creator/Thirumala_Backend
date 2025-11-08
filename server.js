@@ -63,7 +63,11 @@ app.get('/', (req, res) => {
       'POST /buyers': 'Add new buyer',
       'GET /buyers': 'Get all buyers',
       'PUT /buyers/:id': 'Update a buyer',
-      'DELETE /buyers/:id': 'Delete a buyer'
+      'DELETE /buyers/:id': 'Delete a buyer',
+      'POST /ledger': 'Add new ledger entry',
+      'GET /ledger': 'Get all ledger entries',
+      'PUT /ledger/:id': 'Update a ledger entry',
+      'DELETE /ledger/:id': 'Delete a ledger entry'
     }
   });
 });
@@ -353,6 +357,144 @@ app.delete('/buyers/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete buyer',
+      message: error.message
+    });
+  }
+});
+
+// Ledger endpoints
+app.post('/ledger', async (req, res) => {
+  try {
+    const ledgerData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    
+    const result = await db.collection('ledger').insertOne(ledgerData);
+    
+    res.json({
+      success: true,
+      message: 'Ledger entry added successfully',
+      id: result.insertedId.toString()
+    });
+  } catch (error) {
+    console.error('Error adding ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add ledger entry',
+      message: error.message
+    });
+  }
+});
+
+app.get('/ledger', async (req, res) => {
+  try {
+    const ledgerEntries = await db.collection('ledger')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    const formattedEntries = ledgerEntries.map(entry => ({
+      _id: entry._id.toString(),
+      sellerName: entry.sellerName,
+      buyerName: entry.buyerName,
+      loaded: entry.loaded,
+      conditionFromDate: entry.conditionFromDate,
+      conditionToDate: entry.conditionToDate,
+      created_at: entry.created_at?.toISOString() || null,
+      updated_at: entry.updated_at?.toISOString() || null
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedEntries
+    });
+  } catch (error) {
+    console.error('Error fetching ledger entries:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch ledger entries',
+      message: error.message
+    });
+  }
+});
+
+app.put('/ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ledger entry ID'
+      });
+    }
+    
+    const updateData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    
+    delete updateData._id;
+    
+    const result = await db.collection('ledger').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Ledger entry updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update ledger entry',
+      message: error.message
+    });
+  }
+});
+
+app.delete('/ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ledger entry ID'
+      });
+    }
+    
+    const result = await db.collection('ledger').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Ledger entry deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete ledger entry',
       message: error.message
     });
   }
