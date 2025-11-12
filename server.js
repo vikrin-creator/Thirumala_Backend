@@ -68,6 +68,14 @@ app.get('/', (req, res) => {
       'GET /ledger': 'Get all ledger entries',
       'PUT /ledger/:id': 'Update a ledger entry',
       'DELETE /ledger/:id': 'Delete a ledger entry',
+      'POST /seller-ledger': 'Add new seller ledger entry',
+      'GET /seller-ledger': 'Get all seller ledger entries',
+      'PUT /seller-ledger/:id': 'Update a seller ledger entry',
+      'DELETE /seller-ledger/:id': 'Delete a seller ledger entry',
+      'POST /buyer-ledger': 'Add new buyer ledger entry',
+      'GET /buyer-ledger': 'Get all buyer ledger entries',
+      'PUT /buyer-ledger/:id': 'Update a buyer ledger entry',
+      'DELETE /buyer-ledger/:id': 'Delete a buyer ledger entry',
       'POST /lorries': 'Add new lorry',
       'GET /lorries': 'Get all lorries',
       'GET /lorries/:id': 'Get a lorry by ID',
@@ -500,6 +508,292 @@ app.delete('/ledger/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// ==================== SELLER LEDGER ENDPOINTS ====================
+
+// Create a new seller ledger entry
+app.post('/seller-ledger', async (req, res) => {
+  try {
+    const ledgerData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    
+    const result = await db.collection('sellerLedger').insertOne(ledgerData);
+    
+    res.json({
+      success: true,
+      message: 'Seller ledger entry added successfully',
+      id: result.insertedId.toString()
+    });
+  } catch (error) {
+    console.error('Error adding seller ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add seller ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// Get all seller ledger entries
+app.get('/seller-ledger', async (req, res) => {
+  try {
+    const ledgerEntries = await db.collection('sellerLedger')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    const formattedEntries = ledgerEntries.map(entry => ({
+      _id: entry._id.toString(),
+      sellerName: entry.sellerName,
+      buyerName: entry.buyerName,
+      loaded: entry.loaded,
+      conditionFromDate: entry.conditionFromDate,
+      conditionToDate: entry.conditionToDate,
+      created_at: entry.created_at?.toISOString() || null,
+      updated_at: entry.updated_at?.toISOString() || null
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedEntries
+    });
+  } catch (error) {
+    console.error('Error fetching seller ledger entries:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch seller ledger entries',
+      message: error.message
+    });
+  }
+});
+
+// Update a seller ledger entry
+app.put('/seller-ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid seller ledger entry ID'
+      });
+    }
+    
+    const updateData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    
+    delete updateData._id;
+    
+    const result = await db.collection('sellerLedger').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Seller ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Seller ledger entry updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating seller ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update seller ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// Delete a seller ledger entry
+app.delete('/seller-ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid seller ledger entry ID'
+      });
+    }
+    
+    const result = await db.collection('sellerLedger').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Seller ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Seller ledger entry deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting seller ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete seller ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// ==================== BUYER LEDGER ENDPOINTS ====================
+
+// Create a new buyer ledger entry
+app.post('/buyer-ledger', async (req, res) => {
+  try {
+    const ledgerData = {
+      ...req.body,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    
+    const result = await db.collection('buyerLedger').insertOne(ledgerData);
+    
+    res.json({
+      success: true,
+      message: 'Buyer ledger entry added successfully',
+      id: result.insertedId.toString()
+    });
+  } catch (error) {
+    console.error('Error adding buyer ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add buyer ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// Get all buyer ledger entries
+app.get('/buyer-ledger', async (req, res) => {
+  try {
+    const ledgerEntries = await db.collection('buyerLedger')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    const formattedEntries = ledgerEntries.map(entry => ({
+      _id: entry._id.toString(),
+      sellerName: entry.sellerName,
+      buyerName: entry.buyerName,
+      loaded: entry.loaded,
+      conditionFromDate: entry.conditionFromDate,
+      conditionToDate: entry.conditionToDate,
+      created_at: entry.created_at?.toISOString() || null,
+      updated_at: entry.updated_at?.toISOString() || null
+    }));
+    
+    res.json({
+      success: true,
+      data: formattedEntries
+    });
+  } catch (error) {
+    console.error('Error fetching buyer ledger entries:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch buyer ledger entries',
+      message: error.message
+    });
+  }
+});
+
+// Update a buyer ledger entry
+app.put('/buyer-ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid buyer ledger entry ID'
+      });
+    }
+    
+    const updateData = {
+      ...req.body,
+      updated_at: new Date()
+    };
+    
+    delete updateData._id;
+    
+    const result = await db.collection('buyerLedger').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Buyer ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Buyer ledger entry updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating buyer ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update buyer ledger entry',
+      message: error.message
+    });
+  }
+});
+
+// Delete a buyer ledger entry
+app.delete('/buyer-ledger/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid buyer ledger entry ID'
+      });
+    }
+    
+    const result = await db.collection('buyerLedger').deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Buyer ledger entry not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Buyer ledger entry deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting buyer ledger entry:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete buyer ledger entry',
       message: error.message
     });
   }
